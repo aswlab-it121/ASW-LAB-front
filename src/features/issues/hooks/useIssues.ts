@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { issuesApi } from '../api/issuesApi'
-import { IssueSummary, IssueFilters, IssueSort } from '../types'
+import { Issue, IssueFilters } from '../types'
 
-export function useIssues(draftFilters?: IssueFilters, sort?: IssueSort) {
-  const [data, setData] = useState<IssueSummary[]>([])
+export function useIssues(filters?: IssueFilters) {
+  const [data, setData] = useState<Issue[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<any>(null)
 
@@ -12,7 +12,7 @@ export function useIssues(draftFilters?: IssueFilters, sort?: IssueSort) {
     setError(null)
     try {
       const res = await issuesApi.list(applied)
-      setData(res.data)
+      setData(res)
     } catch (err) {
       setError(err)
     } finally {
@@ -21,9 +21,9 @@ export function useIssues(draftFilters?: IssueFilters, sort?: IssueSort) {
   }
 
   useEffect(() => {
-    fetchIssues(draftFilters)
+    fetchIssues(filters)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(draftFilters), JSON.stringify(sort)])
+  }, [JSON.stringify(filters)])
 
-  return { data, loading, error, reload: () => fetchIssues(draftFilters) }
+  return { data, loading, error, reload: () => fetchIssues(filters) }
 }

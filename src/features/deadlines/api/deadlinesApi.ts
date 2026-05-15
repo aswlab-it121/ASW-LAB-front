@@ -1,7 +1,6 @@
-import { api } from '../../../lib/api/http'
+import { settingsApi } from '../../settings/api/settingsApi'
+import { DueDateStatus } from '../../issues/types'
 
 export const deadlinesApi = {
-  list: (issueId: string) => api.get(`/issues/${issueId}/deadlines`),
-  add: (issueId: string, payload: any) => api.post(`/issues/${issueId}/deadlines`, { data: payload }),
-  delete: (issueId: string, deadlineId: string) => api.del(`/issues/${issueId}/deadlines/${deadlineId}`)
+  list: (): Promise<DueDateStatus[]> => settingsApi.list<DueDateStatus>('due-date-statuses')
 }

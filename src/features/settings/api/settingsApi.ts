@@ -1,10 +1,19 @@
 import { api } from '../../../lib/api/http'
+import { DueDateStatus, IssueStatus, ReferenceItem } from '../../issues/types'
 
-type Entity = 'statuses' | 'priorities' | 'types' | 'severities' | 'tags' | 'dueDates'
+export type SettingsEntity = 'statuses' | 'priorities' | 'types' | 'severities' | 'tags' | 'due-date-statuses'
+
+export type SettingsItem = ReferenceItem | IssueStatus | DueDateStatus
 
 export const settingsApi = {
-  list: (entity: Entity) => api.get(`/settings/${entity}`),
-  create: (entity: Entity, payload: any) => api.post(`/settings/${entity}`, { data: payload }),
-  update: (entity: Entity, id: string, payload: any) => api.put(`/settings/${entity}/${id}`, { data: payload }),
-  delete: (entity: Entity, id: string) => api.del(`/settings/${entity}/${id}`)
+  list: <T extends SettingsItem = SettingsItem>(entity: SettingsEntity): Promise<T[]> => api.get(`/${entity}/`),
+  create: <T extends SettingsItem = SettingsItem>(entity: SettingsEntity, payload: any): Promise<T> =>
+    api.post(`/${entity}/`, payload),
+  update: <T extends SettingsItem = SettingsItem>(
+    entity: SettingsEntity,
+    id: string | number,
+    payload: any
+  ): Promise<T> => api.put(`/${entity}/${id}/`, payload),
+  delete: (entity: SettingsEntity, id: string | number): Promise<{ deleted: boolean; id: number }> =>
+    api.del(`/${entity}/${id}/`)
 }

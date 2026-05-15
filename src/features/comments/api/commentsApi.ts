@@ -1,9 +1,12 @@
 import { api } from '../../../lib/api/http'
+import { IssueComment } from '../../issues/types'
 
 export const commentsApi = {
-  list: (issueId: string) => api.get(`/issues/${issueId}/comments`),
-  get: (issueId: string, commentId: string) => api.get(`/issues/${issueId}/comments/${commentId}`),
-  create: (issueId: string, payload: any) => api.post(`/issues/${issueId}/comments`, { data: payload }),
-  update: (issueId: string, commentId: string, payload: any) => api.put(`/issues/${issueId}/comments/${commentId}`, { data: payload }),
-  delete: (issueId: string, commentId: string) => api.del(`/issues/${issueId}/comments/${commentId}`)
+  list: (issueId: string | number): Promise<IssueComment[]> => api.get(`/issues/${issueId}/comments/`),
+  create: (issueId: string | number, comment: string): Promise<IssueComment> =>
+    api.post(`/issues/${issueId}/comments/`, { comment }),
+  update: (issueId: string | number, commentId: string | number, comment: string): Promise<IssueComment> =>
+    api.put(`/issues/${issueId}/comments/${commentId}/`, { comment }),
+  delete: (issueId: string | number, commentId: string | number): Promise<{ deleted: boolean; id: number }> =>
+    api.del(`/issues/${issueId}/comments/${commentId}/`)
 }

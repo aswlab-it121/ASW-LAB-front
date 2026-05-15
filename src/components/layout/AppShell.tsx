@@ -4,11 +4,11 @@ import Sidebar from './Sidebar'
 
 const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="app-root">
       <Header />
-      <div className="flex flex-1">
+      <div className="app-body">
         <Sidebar />
-        <main className="flex-1 p-4">{children}</main>
+        <main className="app-main">{children}</main>
       </div>
     </div>
   )

@@ -1,8 +1,9 @@
-import create from 'zustand'
+import { create } from 'zustand'
 
 export type AppUser = {
-  id: string
+  id: number
   displayName: string
+  username: string
   email: string
   avatarUrl?: string
   apiKey: string
@@ -10,58 +11,42 @@ export type AppUser = {
 
 type UserState = {
   users: AppUser[]
-  selectedId: string
-  setSelected: (id: string) => void
+  selectedId: number
+  setSelected: (id: number | string) => void
 }
 
 const hardcodedUsers: AppUser[] = [
   {
-    id: 'u1',
-    displayName: 'Alice Admin',
-    email: 'alice@example.com',
-    avatarUrl: 'https://i.pravatar.cc/40?img=1',
-    apiKey: 'apikey-alice-001'
-  },
+    id: 1,
+    displayName: 'EncryptEx',
+    username: 'EncryptEx',
+    email: 'user@example.com',
+    apiKey: 'd519c9b214466e4e841b7571a8304c7e49e3f743799c3b011d3f6e250aa931b1'
+  }, 
   {
-    id: 'u2',
-    displayName: 'Bob Builder',
-    email: 'bob@example.com',
-    avatarUrl: 'https://i.pravatar.cc/40?img=2',
-    apiKey: 'apikey-bob-002'
-  },
-  {
-    id: 'u3',
-    displayName: 'Carol Contributor',
-    email: 'carol@example.com',
-    avatarUrl: 'https://i.pravatar.cc/40?img=3',
-    apiKey: 'apikey-carol-003'
+    id: 2,
+    displayName: 'marc',
+    username: 'marc',
+    email: 'marc@example.com',
+    apiKey: '229c698ebababd0847efcaa89f75ae1bff9e159bfeafc7d7e8377cf295111778'
   }
 ]
 
-export const useUserStore = create<UserState>(() => ({
+export const useUserStore = create<UserState>((set) => ({
   users: hardcodedUsers,
   selectedId: hardcodedUsers[0].id,
-  setSelected(id: string) {
-    // simple setter; persistence could be added
-    // eslint-disable-next-line no-use-before-define
-    setSelectedImpl(id)
+  setSelected(id) {
+    set({ selectedId: Number(id) })
   }
 }))
 
-// helper to avoid TS complaining when setting in the closure above
-function setSelectedImpl(id: string) {
-  // Recreate store update: direct access via create is complex; instead use a new create to get set
-  // Simpler: mutate the store via (useUserStore as any).setState
-  ;(useUserStore as any).setState({ selectedId: id })
-}
-
 export const getSelectedApiKey = () => {
-  const s = useUserStore.getState()
-  const user = s.users.find((u) => u.id === s.selectedId)
+  const state = useUserStore.getState()
+  const user = state.users.find((item) => item.id === state.selectedId)
   return user?.apiKey
 }
 
 export const getSelectedUser = (): AppUser | undefined => {
-  const s = useUserStore.getState()
-  return s.users.find((u) => u.id === s.selectedId)
+  const state = useUserStore.getState()
+  return state.users.find((item) => item.id === state.selectedId)
 }

@@ -7,10 +7,15 @@ const UserSelector: React.FC = () => {
   const selectedId = useUserStore((s) => s.selectedId)
   const setSelected = useUserStore((s) => s.setSelected)
 
+  const selectedUser = users.find((u) => u.id === selectedId)
+  const initials = selectedUser?.displayName.slice(0, 2).toUpperCase() || 'U'
+
   return (
     <div className="flex items-center gap-3">
-      <img src={users.find((u) => u.id === selectedId)?.avatarUrl} alt="avatar" className="w-8 h-8 rounded-full" />
-      <Select value={selectedId} onChange={(e) => setSelected(e.target.value)}>
+      <span className="app-avatar app-avatar--small">
+        {selectedUser?.avatarUrl ? <img src={selectedUser.avatarUrl} alt="" /> : initials}
+      </span>
+      <Select value={String(selectedId)} onChange={(e) => setSelected(e.target.value)} aria-label="Current API user">
         {users.map((u) => (
           <option key={u.id} value={u.id}>
             {u.displayName} ({u.email})
