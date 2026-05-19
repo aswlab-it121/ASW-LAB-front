@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, Check, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, Pencil, Plus, Trash2, X, GripVertical } from 'lucide-react'
 import { SettingsEntity, SettingsItem, settingsApi } from '../features/settings/api/settingsApi'
 import { DueDateStatus, IssueStatus } from '../features/issues/types'
 
@@ -54,6 +54,7 @@ const SettingsPage: React.FC = () => {
   })
 
   const section = useMemo(() => sections.find((item) => item.key === active) || sections[0], [active])
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
 
   async function load() {
     setLoading(true)
@@ -151,7 +152,11 @@ const SettingsPage: React.FC = () => {
     const editing = Boolean(item)
     return (
       <tr className="settings-inline-row">
-        <td className="drag-cell">..</td>
+        <td className="drag-cell">
+          <span className="drag-cell-icon">
+            <GripVertical size={16} />
+          </span>
+        </td>
         <td>
           <input type="color" value={form.color} onChange={(event) => setForm((current) => ({ ...current, color: event.target.value }))} />
         </td>
@@ -216,9 +221,7 @@ const SettingsPage: React.FC = () => {
   return (
     <section className="settings-layout">
       <aside className="settings-sidebar">
-        <button className="settings-nav-item settings-nav-back" type="button" onClick={() => history.back()}>
-          {'<<'} Back to Issues
-        </button>
+        {/* Back button removed as requested */}
         {sections.map((item) => (
           <button
             type="button"
@@ -233,30 +236,30 @@ const SettingsPage: React.FC = () => {
 
       <div className="settings-content">
         <h1>{section.title}</h1>
-        <p className="settings-description">{section.description}</p>
+        <div className="settings-description-row">
+          <p className="settings-description">{section.description}</p>
+          <button
+            type="button"
+            className="settings-action"
+            onClick={() => {
+              resetForm()
+              setEditingId(null)
+              setShowAdd(true)
+            }}
+          >
+            <Plus size={15} /> ADD NEW
+          </button>
+        </div>
         {message && <div className="settings-message">{message}</div>}
 
         <section className="settings-section">
-          <header className="settings-section-header">
-            <h2>{section.label === 'DUE DATES' ? 'Issue Due Dates' : `Issue ${section.title}`}</h2>
-            <button
-              type="button"
-              className="settings-action"
-              onClick={() => {
-                resetForm()
-                setEditingId(null)
-                setShowAdd(true)
-              }}
-            >
-              <Plus size={15} /> ADD NEW
-            </button>
-          </header>
+          {/* Per-list title removed; Add button moved next to description above */}
 
           {loading ? (
             <div className="empty-state">Loading settings...</div>
           ) : (
             <table className="settings-table">
-              <thead>
+            <thead>
                 <tr>
                   <th>Order</th>
                   <th>Color</th>
@@ -271,23 +274,40 @@ const SettingsPage: React.FC = () => {
                   <th />
                 </tr>
               </thead>
-              <tbody>
+            <tbody>
                 {showAdd && renderEditor()}
                 {items.map((item, index) =>
                   editingId === item.id ? (
                     renderEditor(item)
                   ) : (
-                    <tr key={item.id}>
+                    <tr
+                      key={item.id}
+                      draggable={!(isDueDate(item) && item.is_default)}
+                      onDragStart={(e) => {
+                        e.dataTransfer?.setData('text/plain', String(index))
+                        setDragIndex(index)
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={async (e) => {
+                        e.preventDefault()
+                        const from = dragIndex
+                        const to = index
+                        if (from == null || from === to) return
+                        const next = [...items]
+                        const [moved] = next.splice(from, 1)
+                        next.splice(to, 0, moved)
+                        setItems(next)
+                        try {
+                          await Promise.all(next.map((it, itemIndex) => settingsApi.update(active, it.id, { order: itemIndex + 1 })))
+                          await load()
+                        } catch (err: any) {
+                          setMessage(err.message || 'Could not persist order.')
+                        }
+                      }}
+                    >
                       <td className="settings-order">
-                        <button type="button" onClick={() => moveItem(index, -1)} disabled={index === 0 || (isDueDate(item) && item.is_default)}>
-                          <ArrowUp size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveItem(index, 1)}
-                          disabled={index === items.length - 1 || (isDueDate(item) && item.is_default)}
-                        >
-                          <ArrowDown size={15} />
+                        <button type="button" className="settings-drag-handle" aria-label={`Drag ${item.name}`}>
+                          <GripVertical size={16} />
                         </button>
                       </td>
                       <td>
@@ -303,12 +323,7 @@ const SettingsPage: React.FC = () => {
                       )}
                       <td>
                         <div className="settings-actions">
-                          <button
-                            type="button"
-                            className="settings-icon-btn"
-                            onClick={() => beginEdit(item)}
-                            disabled={isDueDate(item) && item.is_default}
-                          >
+                          <button type="button" className="settings-icon-btn" onClick={() => beginEdit(item)} disabled={isDueDate(item) && item.is_default}>
                             <Pencil size={16} />
                           </button>
                           <button type="button" className="settings-icon-btn is-danger" onClick={() => deleteItem(item)}>
