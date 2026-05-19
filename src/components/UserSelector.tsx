@@ -5,9 +5,11 @@ import { Select } from './ui/Select'
 const UserSelector: React.FC = () => {
   const users = useUserStore((s) => s.users)
   const selectedId = useUserStore((s) => s.selectedId)
+  const pendingSelectedId = useUserStore((s) => s.pendingSelectedId)
   const setSelected = useUserStore((s) => s.setSelected)
 
-  const selectedUser = users.find((u) => u.id === selectedId)
+  const displayId = pendingSelectedId ?? selectedId
+  const selectedUser = users.find((u) => u.id === displayId)
   const initials = selectedUser?.displayName.slice(0, 2).toUpperCase() || 'U'
 
   return (
@@ -15,13 +17,20 @@ const UserSelector: React.FC = () => {
       <span className="app-avatar app-avatar--small">
         {selectedUser?.avatarUrl ? <img src={selectedUser.avatarUrl} alt="" /> : initials}
       </span>
-      <Select value={String(selectedId)} onChange={(e) => setSelected(e.target.value)} aria-label="Current API user">
+      <Select
+        value={String(displayId)}
+        onChange={(e) => setSelected(e.target.value)}
+        aria-label="Current API user"
+      >
         {users.map((u) => (
           <option key={u.id} value={u.id}>
             {u.displayName} ({u.email})
           </option>
         ))}
       </Select>
+      {pendingSelectedId !== null && (
+        <span title="User switch will apply after saving the issue">⏳</span>
+      )}
     </div>
   )
 }

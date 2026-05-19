@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { usersApi } from '../api/usersApi'
 import { ApiUser } from '../../issues/types'
+import { Button } from '../../../components/ui/Button'
+import { Input } from '../../../components/ui/Input'
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value))
@@ -10,15 +12,51 @@ function formatDate(value: string) {
 const UserProfilePage: React.FC = () => {
   const { userId } = useParams()
   const [user, setUser] = useState<ApiUser | null>(null)
+  const [me, setMe] = useState<ApiUser | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [description, setDescription] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const isOwnProfile = me !== null && user !== null && me.id === user.id
 
   useEffect(() => {
     if (!userId) return
     usersApi
       .get(userId)
-      .then(setUser)
+      .then((u) => {
+        setUser(u)
+        setFirstName(u.first_name || '')
+        setLastName(u.last_name || '')
+        setDescription(u.description || '')
+      })
       .catch((err) => setError(err.message || 'Could not load user.'))
+
+    usersApi.me().then(setMe).catch(console.error)
   }, [userId])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const updated = await usersApi.updateMe({ first_name: firstName, last_name: lastName, description })
+      setUser((prev) => (prev ? { ...prev, ...updated } : prev))
+      setMe(updated)
+      setIsEditing(false)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCancel = () => {
+    setFirstName(user?.first_name || '')
+    setLastName(user?.last_name || '')
+    setDescription(user?.description || '')
+    setIsEditing(false)
+  }
 
   if (error) return <div className="error-state">{error}</div>
   if (!user) return <div className="empty-state">Loading user...</div>
@@ -31,7 +69,32 @@ const UserProfilePage: React.FC = () => {
           <h1>{user.full_name || user.username}</h1>
           <p>@{user.username}</p>
         </div>
-        <p className={user.description ? 'profile-bio' : 'muted'}>{user.description || 'No profile description.'}</p>
+
+        {isEditing ? (
+          <div className="space-y-2 mt-2">
+            <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" />
+            <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" />
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Bio"
+              className="border rounded-md px-3 py-2 text-sm w-full"
+              rows={3}
+            />
+            <div className="flex gap-2">
+              <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+              <Button variant="ghost" onClick={handleCancel} disabled={saving}>Cancel</Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className={user.description ? 'profile-bio' : 'muted'}>{user.description || 'No profile description.'}</p>
+            {isOwnProfile && (
+              <Button className="mt-2" onClick={() => setIsEditing(true)}>Edit profile</Button>
+            )}
+          </>
+        )}
+
         <div className="stats-grid">
           <div>
             <strong>{user.open_issues_count || 0}</strong>

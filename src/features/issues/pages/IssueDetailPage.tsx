@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Paperclip, Trash2, X } from 'lucide-react'
-import { getSelectedUser } from '../../../app/store/userStore'
+import { getSelectedUser, useUserStore } from '../../../app/store/userStore'
 import { activitiesApi } from '../../activities/api/activitiesApi'
 import { attachmentsApi } from '../../attachments/api/attachmentsApi'
 import { commentsApi } from '../../comments/api/commentsApi'
@@ -83,6 +83,8 @@ const IssueDetailPage: React.FC = () => {
   const { issueId } = useParams()
   const nav = useNavigate()
   const currentUser = getSelectedUser()
+  const setEditingIssue = useUserStore((s) => s.setEditingIssue)
+  const applyPendingSelection = useUserStore((s) => s.applyPendingSelection)
   const [issue, setIssue] = useState<Issue | null>(null)
   const [refs, setRefs] = useState<ReferenceData>(emptyRefs)
   const [comments, setComments] = useState<IssueComment[]>([])
@@ -161,6 +163,12 @@ const IssueDetailPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [issueId])
 
+  useEffect(() => {
+    setEditingIssue(true)
+    return () => setEditingIssue(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const editable = useMemo(() => (issue ? canEditIssue(issue, currentUser) : false), [issue, currentUser])
   const selectedTags = useMemo(() => refs.tags.filter((tag) => tagIds.includes(tag.id)), [refs.tags, tagIds])
   const availableWatchers = refs.users.filter((user) => !watchers.some((watcher) => watcher.id === user.id))
@@ -197,7 +205,7 @@ const IssueDetailPage: React.FC = () => {
     setSaving(true)
     try {
       await issuesApi.update(issue.id, payload)
-      await loadAll()
+      applyPendingSelection()
       nav('/issues')
     } catch (err: any) {
       setError(err.message || 'Could not save issue.')
