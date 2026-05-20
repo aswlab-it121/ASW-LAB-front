@@ -1,11 +1,13 @@
 services:
-  - type: web
+  - type: static
     name: asw-lab-front
-    runtime: node
     plan: free
     buildCommand: npm install && npm run build
-    startCommand: npm install -g serve && serve -s dist -l 3000
-    publishDirectory: dist
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
     envVars:
       - key: NODE_VERSION
         value: 18
