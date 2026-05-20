@@ -22,10 +22,10 @@ type UserState = {
 const hardcodedUsers: AppUser[] = [
   {
     id: 1,
-    displayName: 'EncryptEx',
+    displayName: 'Jaume Lopez',
     username: 'EncryptEx',
-    email: 'user@example.com',
-    apiKey: 'd519c9b214466e4e841b7571a8304c7e49e3f743799c3b011d3f6e250aa931b1'
+    email: 'limusina10@gmail.com',
+    apiKey: '161501b8eff0fefe6ea3762894f5dfa77bc0a8efa3987f32a6316c8e39de75f0'
   },
   {
     id: 2,
