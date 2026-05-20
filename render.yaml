@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: asw-lab-front
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm install -g serve && serve -s dist -l 3000
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: VITE_API_BASE_URL
+        fromDatabase:
+          name: default
+          property: VITE_API_BASE_URL
