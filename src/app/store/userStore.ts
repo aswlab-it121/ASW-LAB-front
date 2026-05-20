@@ -29,23 +29,37 @@ const hardcodedUsers: AppUser[] = [
   },
   {
     id: 2,
-    displayName: 'marc',
-    username: 'marc',
-    email: 'marc@example.com',
-    apiKey: '229c698ebababd0847efcaa89f75ae1bff9e159bfeafc7d7e8377cf295111778'
+    displayName: 'marcal',
+    username: 'marcaltm19',
+    email: 'marcal.tejedor@estudiantat.upc.edu',
+    apiKey: 'bdd28a6a3d8e899dcd86d75142b7425de72f0b5b9826b3d47904897ae53124b6'
   }
 ]
 
 export const useUserStore = create<UserState>((set, get) => ({
   users: hardcodedUsers,
-  selectedId: hardcodedUsers[0].id,
+  selectedId: (() => {
+    try {
+      const raw = localStorage.getItem('selectedId')
+      const parsed = raw !== null ? Number(raw) : NaN
+      return Number.isFinite(parsed) ? parsed : hardcodedUsers[0].id
+    } catch (e) {
+      return hardcodedUsers[0].id
+    }
+  })(),
   pendingSelectedId: null,
   isEditingIssue: false,
   setSelected(id) {
     if (get().isEditingIssue) {
       set({ pendingSelectedId: Number(id) })
     } else {
-      set({ selectedId: Number(id) })
+      const num = Number(id)
+      set({ selectedId: num })
+      try {
+        localStorage.setItem('selectedId', String(num))
+      } catch (e) {
+        // ignore
+      }
       window.location.reload()
     }
   },
@@ -56,6 +70,11 @@ export const useUserStore = create<UserState>((set, get) => ({
     const { pendingSelectedId } = get()
     if (pendingSelectedId !== null) {
       set({ selectedId: pendingSelectedId, pendingSelectedId: null, isEditingIssue: false })
+      try {
+        localStorage.setItem('selectedId', String(pendingSelectedId))
+      } catch (e) {
+        // ignore
+      }
       window.location.reload()
     } else {
       set({ isEditingIssue: false })
