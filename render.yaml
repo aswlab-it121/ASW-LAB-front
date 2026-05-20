@@ -1,6 +1,7 @@
 services:
-  - type: static
+  - type: web
     name: asw-lab-front
+    runtime: static
     plan: free
     buildCommand: npm install && npm run build
     staticPublishPath: dist
