@@ -33,6 +33,13 @@ const hardcodedUsers: AppUser[] = [
     username: 'marcaltm19',
     email: 'marcal.tejedor@estudiantat.upc.edu',
     apiKey: 'bdd28a6a3d8e899dcd86d75142b7425de72f0b5b9826b3d47904897ae53124b6'
+  },
+  {
+    id: 3,
+    displayName: 'kaleb',
+    username: 'kalebgrove',
+    email: 'kwolfgrove@gmail.com',
+    apiKey: '844ad76ca307bd94bf0953b59c26d4fe14b5127b10a3f7121d2e5c1fc3bc6a7f'
   }
 ]
 

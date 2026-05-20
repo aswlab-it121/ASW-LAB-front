@@ -414,10 +414,10 @@ const IssueDetailPage: React.FC = () => {
             <section className="attachments-box">
               <div className="section-head">
                 <h2>{attachments.length} Attachment{attachments.length === 1 ? '' : 's'}</h2>
-                <label className="secondary-button file-button">
+                <button className="secondary-button file-button">
                   + Add file
                   <input type="file" multiple hidden onChange={(event) => uploadFiles(event.target.files)} />
-                </label>
+                </button>
               </div>
               {attachments.length === 0 ? (
                 <p className="muted">No attachments yet.</p>

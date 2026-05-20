@@ -1275,3 +1275,7 @@ select:disabled {
     min-width: 180px;
   }
 }
+
+.secondary-button.file-button:hover {
+  cursor: pointer;
+}
