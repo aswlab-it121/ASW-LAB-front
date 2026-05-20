@@ -9,7 +9,3 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 18
-      - key: VITE_API_BASE_URL
-        fromDatabase:
-          name: default
-          property: VITE_API_BASE_URL
