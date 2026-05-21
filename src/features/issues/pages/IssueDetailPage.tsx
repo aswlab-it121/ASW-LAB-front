@@ -445,12 +445,19 @@ const IssueDetailPage: React.FC = () => {
                 </label>
               </div>
               {pendingFiles.length > 0 && (
+                <p className="pending-uploads-note">
+                  {pendingFiles.length} file{pendingFiles.length === 1 ? '' : 's'} pending upload. They will be uploaded when you save.
+                </p>
+              )}
+              {pendingFiles.length > 0 && (
                 <ul className="attachment-list">
                   {pendingFiles.map((file, index) => (
-                    <li className="attachment-item" key={`${file.name}-${file.size}-${index}`}>
+                    <li className="attachment-item attachment-item--pending" key={`${file.name}-${file.size}-${index}`}>
                       <Paperclip size={16} />
                       <div>
-                        <span>{file.name}</span>
+                        <span>
+                          {file.name} <span className="pending-badge">Pending</span>
+                        </span>
                         <p>
                           {fileSize(file.size)} · ready to upload on save
                         </p>
@@ -616,7 +623,11 @@ const IssueDetailPage: React.FC = () => {
             </button>
           )}
           <button type="submit" className="primary-button" disabled={saving}>
-            {saving ? 'Saving...' : 'Save changes'}
+            {saving
+              ? 'Saving...'
+              : pendingFiles.length > 0
+                ? `Save changes (${pendingFiles.length} file${pendingFiles.length === 1 ? '' : 's'} pending)`
+                : 'Save changes'}
           </button>
         </div>
       </form>

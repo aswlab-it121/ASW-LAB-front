@@ -938,6 +938,30 @@ select:disabled {
   position: relative;
 }
 
+.pending-uploads-note {
+  margin: 8px 0 10px;
+  color: #0d5168;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.attachment-item--pending {
+  border-color: #b8dff2;
+  background: #f2fbff;
+}
+
+.pending-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #d8f1ff;
+  color: #0d5168;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
 .modal-actions {
   justify-content: flex-end;
   margin-top: 22px;
