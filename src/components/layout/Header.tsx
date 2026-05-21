@@ -6,7 +6,7 @@ const Header: React.FC = () => {
   return (
     <header className="app-header">
       <Link to="/issues" className="app-brand">
-        ASW Issues
+        Issue Tracker
       </Link>
       <UserSelector />
     </header>

@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: asw-lab-front
+    runtime: static
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: VITE_API_BASE_URL
+        value: https://asw-lab.onrender.com/api

@@ -1,9 +1,23 @@
 import { AppUser } from '../app/store/userStore'
 import { Issue, IssueAttachment, IssueComment } from '../features/issues/types'
 
+function isSameUser(currentUser?: AppUser | null, other?: { id?: number; username?: string | null; email?: string | null } | null) {
+  if (!currentUser || !other) return false
+  if (typeof other.id === 'number' && other.id === currentUser.id) return true
+
+  const leftUsername = (currentUser.username || '').trim().toLowerCase()
+  const rightUsername = (other.username || '').trim().toLowerCase()
+  if (leftUsername && rightUsername && leftUsername === rightUsername) return true
+
+  const leftEmail = (currentUser.email || '').trim().toLowerCase()
+  const rightEmail = (other.email || '').trim().toLowerCase()
+  if (leftEmail && rightEmail && leftEmail === rightEmail) return true
+
+  return false
+}
+
 export function canEditIssue(issue: Issue, currentUser?: AppUser | null) {
-  if (!currentUser || !issue.created_by) return false
-  return issue.created_by.id === currentUser.id
+  return isSameUser(currentUser, issue.created_by)
 }
 
 export function canDeleteIssue(issue: Issue, currentUser?: AppUser | null) {

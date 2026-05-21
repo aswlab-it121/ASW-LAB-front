@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Pencil, Trash2, X } from 'lucide-react'
 import { useUserStore } from '../../../app/store/userStore'
 import { commentsApi } from '../../comments/api/commentsApi'
-import { usersApi } from '../api/usersApi'
 import { ApiUser, UserCommentEntry, UserIssueEntry } from '../../issues/types'
+import { usersApi } from '../api/usersApi'
 
 type ProfileTab = 'assigned' | 'watched' | 'comments'
 
@@ -160,9 +160,9 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ ownProfile = false })
   const [editingCommentText, setEditingCommentText] = useState('')
   const [busyCommentId, setBusyCommentId] = useState<number | null>(null)
 
-  function fetchProfile() {
+  const fetchProfile = useCallback(() => {
     return ownProfile ? usersApi.me() : userId ? usersApi.get(userId) : Promise.reject(new Error('Missing user id.'))
-  }
+  }, [ownProfile, userId])
 
   useEffect(() => {
     setUser(null)
@@ -171,8 +171,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ ownProfile = false })
     setEditingCommentId(null)
     setEditingCommentText('')
     fetchProfile().then(setUser).catch((err) => setError(err.message || 'Could not load user.'))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownProfile, selectedId, userId])
+  }, [fetchProfile, selectedId])
 
   const activeTab = useMemo<ProfileTab>(() => {
     const requested = searchParams.get('tab')

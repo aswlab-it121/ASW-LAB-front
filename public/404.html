@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Issue Tracker</title>
+    <script>
+      (function () {
+        var path = window.location.pathname.replace(/^\/+/, '')
+        var search = window.location.search || ''
+        var hash = '#/' + path
+
+        if (path) {
+          window.location.replace('/' + hash + search)
+        } else {
+          window.location.replace('/' + search)
+        }
+      })()
+    </script>
+  </head>
+  <body></body>
+</html>

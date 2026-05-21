@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronDown, Clock, Filter, ListPlus, Lock, Plus, Search, Settings } from 'lucide-react'
-import { useUserStore } from '../../../app/store/userStore'
+import { getSelectedUser, useUserStore } from '../../../app/store/userStore'
+import { canEditIssue } from '../../../lib/permissions'
 import { useIssues } from '../hooks/useIssues'
 import { issuesApi } from '../api/issuesApi'
 import { usersApi } from '../../users/api/usersApi'
@@ -78,6 +79,7 @@ function resolveDueDateColor(issue: Issue, statuses: DueDateStatus[]) {
 const IssuesListPage: React.FC = () => {
   const { data: issues, loading, error, reload } = useIssues()
   const selectedId = useUserStore((state) => state.selectedId)
+  const currentUser = getSelectedUser()
   const [users, setUsers] = useState<ApiUser[]>([])
   const [dueStatuses, setDueStatuses] = useState<DueDateStatus[]>([])
   const [query, setQuery] = useState('')
@@ -163,6 +165,10 @@ const IssuesListPage: React.FC = () => {
 
   async function saveAssignee() {
     if (!assigneeIssue) return
+    if (!canEditIssue(assigneeIssue, currentUser)) {
+      setAssigneeIssue(null)
+      return
+    }
     setSavingAssignee(true)
     try {
       await issuesApi.update(assigneeIssue.id, { assigned_to_id: assigneeId ? Number(assigneeId) : null })
@@ -261,9 +267,14 @@ const IssuesListPage: React.FC = () => {
                   ['modified', 'Modified'],
                   ['assigned', 'Assign To']
                 ].map(([key, label]) => (
-                  <button type="button" key={key} onClick={() => toggleSort(key as SortKey)}>
+                  <button
+                    type="button"
+                    key={key}
+                    className={`issues-head-button issues-head-button--${key === 'issue' ? 'issue' : 'meta'}`}
+                    onClick={() => toggleSort(key as SortKey)}
+                  >
                     {label}
-                    {sortKey === key ? <span className={`sort-indicator is-${sortDirection}`} /> : <span className="sort-indicator" />}
+                    {sortKey === key && <span className={`sort-indicator is-${sortDirection}`} />}
                   </button>
                 ))}
               </div>
@@ -284,34 +295,43 @@ const IssuesListPage: React.FC = () => {
                   <span className="issue-dot" style={{ '--dot-color': issue.priority?.color || '#ead13a' } as React.CSSProperties} title={issue.priority?.name || 'Priority not set'} />
 
                   <div className="issue-summary">
-                    <span className="issue-id">#{issue.id}</span>
-                    <span className="issue-title">{issue.title || 'Untitled issue'}</span>
-                    {issue.blocker && (
-                      <span className="issue-flag issue-flag--blocked" title={issue.blocker}>
-                        <Lock size={14} />
-                      </span>
-                    )}
-                    {issue.due_date && (
-                      <span
-                        className="issue-flag issue-flag--due"
-                        style={{ '--due-color': resolveDueDateColor(issue, dueStatuses) } as React.CSSProperties}
-                        title={`Due ${issue.due_date}`}
-                      >
-                        <Clock size={14} />
-                      </span>
-                    )}
-                    {issue.tags.map((tag) => (
-                      <span className="issue-chip" key={tag.id} style={{ '--tag-color': tag.color || '#b4b0c4' } as React.CSSProperties}>
-                        {tag.name}
-                      </span>
-                    ))}
+                    <div className="issue-summary-main">
+                      <span className="issue-id">#{issue.id}</span>
+                      <span className="issue-title">{issue.title || 'Untitled issue'}</span>
+                      {issue.blocker && (
+                        <span className="issue-flag issue-flag--blocked" title={issue.blocker}>
+                          <Lock size={14} />
+                        </span>
+                      )}
+                      {issue.due_date && (
+                        <span
+                          className="issue-flag issue-flag--due"
+                          style={{ '--due-color': resolveDueDateColor(issue, dueStatuses) } as React.CSSProperties}
+                          title={`Due ${issue.due_date}`}
+                        >
+                          <Clock size={14} />
+                        </span>
+                      )}
+                    </div>
+                    <div className="issue-tags">
+                      {issue.tags.map((tag) => (
+                        <span className="issue-chip" key={tag.id} style={{ '--tag-color': tag.color || '#b4b0c4' } as React.CSSProperties}>
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
                   </div>
 
                   <span className="issue-status" style={{ '--status-color': issue.status?.color || '#47a5ef' } as React.CSSProperties}>
                     {issue.status?.name || 'New'}
                   </span>
                   <span className="issue-modified">{readableDate(issue.updated_at)}</span>
-                  <div className="assignee-cell" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
+                  <div
+                    className={`assignee-cell ${canEditIssue(issue, currentUser) ? '' : 'assignee-cell--readonly'}`}
+                    onClick={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
+                    title={canEditIssue(issue, currentUser) ? undefined : 'Only the issue creator can edit this issue'}
+                  >
                     {issue.assigned_to ? (
                       <Link className="assignee-profile-link" to={profilePath(issue.assigned_to, selectedId)}>
                         <span className="app-avatar app-avatar--small">
@@ -325,17 +345,19 @@ const IssuesListPage: React.FC = () => {
                         <span>Unassigned</span>
                       </span>
                     )}
-                    <button
-                      type="button"
-                      className="assignee-edit-button"
-                      onClick={() => {
-                        setAssigneeIssue(issue)
-                        setAssigneeId(issue.assigned_to?.id ? String(issue.assigned_to.id) : '')
-                      }}
-                      aria-label="Change assignee"
-                    >
-                      <ChevronDown size={16} />
-                    </button>
+                    {canEditIssue(issue, currentUser) && (
+                      <button
+                        type="button"
+                        className="assignee-edit-button"
+                        onClick={() => {
+                          setAssigneeIssue(issue)
+                          setAssigneeId(issue.assigned_to?.id ? String(issue.assigned_to.id) : '')
+                        }}
+                        aria-label="Change assignee"
+                      >
+                        <ChevronDown size={16} />
+                      </button>
+                    )}
                   </div>
                 </article>
               ))}

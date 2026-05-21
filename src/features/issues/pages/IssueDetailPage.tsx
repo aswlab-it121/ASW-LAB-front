@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Paperclip, Trash2, X } from 'lucide-react'
-import { getSelectedUser } from '../../../app/store/userStore'
+import { getSelectedUser, useUserStore } from '../../../app/store/userStore'
 import { activitiesApi } from '../../activities/api/activitiesApi'
 import { attachmentsApi } from '../../attachments/api/attachmentsApi'
 import { commentsApi } from '../../comments/api/commentsApi'
@@ -83,6 +83,8 @@ const IssueDetailPage: React.FC = () => {
   const { issueId } = useParams()
   const nav = useNavigate()
   const currentUser = getSelectedUser()
+  const setEditingIssue = useUserStore((s) => s.setEditingIssue)
+  const applyPendingSelection = useUserStore((s) => s.applyPendingSelection)
   const [issue, setIssue] = useState<Issue | null>(null)
   const [refs, setRefs] = useState<ReferenceData>(emptyRefs)
   const [comments, setComments] = useState<IssueComment[]>([])
@@ -104,7 +106,8 @@ const IssueDetailPage: React.FC = () => {
   const [statusId, setStatusId] = useState('')
   const [assignedToId, setAssignedToId] = useState('')
   const [tagIds, setTagIds] = useState<number[]>([])
-  const [newTagName, setNewTagName] = useState('')
+  const [tagQuery, setTagQuery] = useState('')
+  const [tagPickerOpen, setTagPickerOpen] = useState(false)
   const [newTagColor, setNewTagColor] = useState('#c7cad4')
   const [newTags, setNewTags] = useState<Array<{ name: string; color: string }>>([])
   const [commentDraft, setCommentDraft] = useState('')
@@ -161,20 +164,74 @@ const IssueDetailPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [issueId])
 
+  useEffect(() => {
+    setEditingIssue(true)
+    return () => setEditingIssue(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const editable = useMemo(() => (issue ? canEditIssue(issue, currentUser) : false), [issue, currentUser])
   const selectedTags = useMemo(() => refs.tags.filter((tag) => tagIds.includes(tag.id)), [refs.tags, tagIds])
+  const availableTags = useMemo(() => refs.tags.filter((tag) => !tagIds.includes(tag.id)), [refs.tags, tagIds])
+  const recommendedTags = useMemo(() => {
+    const query = tagQuery.trim().toLowerCase()
+    if (!query) return availableTags
+    return availableTags.filter((tag) => tag.name.toLowerCase().includes(query))
+  }, [availableTags, tagQuery])
   const availableWatchers = refs.users.filter((user) => !watchers.some((watcher) => watcher.id === user.id))
+
+  useEffect(() => {
+    if (!editable) {
+      setTagPickerOpen(false)
+      setTagQuery('')
+      setNewTagColor('#c7cad4')
+    }
+  }, [editable])
 
   function toggleTag(id: number) {
     setTagIds((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]))
   }
 
-  function addNewTag() {
-    const name = newTagName.trim()
+  function closeTagPicker() {
+    setTagPickerOpen(false)
+    setTagQuery('')
+    setNewTagColor('#c7cad4')
+  }
+
+  function addNewTag(name: string) {
     if (!name) return
     setNewTags((current) => [...current, { name, color: newTagColor }])
-    setNewTagName('')
-    setNewTagColor('#c7cad4')
+  }
+
+  function commitTagSelection() {
+    const query = tagQuery.trim()
+    if (!query || !editable) return
+    const normalizedQuery = query.toLowerCase()
+    const exactMatch = availableTags.find((tag) => tag.name.toLowerCase() === normalizedQuery)
+    if (exactMatch) {
+      toggleTag(exactMatch.id)
+      closeTagPicker()
+      return
+    }
+    if (recommendedTags.length > 0) {
+      toggleTag(recommendedTags[0].id)
+      closeTagPicker()
+      return
+    }
+    addNewTag(query)
+    closeTagPicker()
+  }
+
+  function selectRecommendedTag(id: number) {
+    if (!editable) return
+    toggleTag(id)
+    closeTagPicker()
+  }
+
+  function onTagQueryKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== 'Enter') return
+    event.preventDefault()
+    commitTagSelection()
   }
 
   async function saveIssue(event: React.FormEvent) {
@@ -197,7 +254,7 @@ const IssueDetailPage: React.FC = () => {
     setSaving(true)
     try {
       await issuesApi.update(issue.id, payload)
-      await loadAll()
+      applyPendingSelection()
       nav('/issues')
     } catch (err: any) {
       setError(err.message || 'Could not save issue.')
@@ -301,32 +358,54 @@ const IssueDetailPage: React.FC = () => {
                     type="button"
                     className="tag-chip"
                     key={`${tag.name}-${index}`}
-                    onClick={() => setNewTags((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                    onClick={() => editable && setNewTags((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                    disabled={!editable}
                     style={{ '--tag-color': tag.color } as React.CSSProperties}
                   >
-                    {tag.name} x
+                    {tag.name} {editable ? 'x' : ''}
                   </button>
                 ))}
                 {selectedTags.length === 0 && newTags.length === 0 && <span className="muted">No tags selected</span>}
-              </div>
-              {editable && (
-                <div className="tag-controls">
-                  <select value="" onChange={(event) => event.target.value && toggleTag(Number(event.target.value))}>
-                    <option value="">Add existing tag</option>
-                    {refs.tags
-                      .filter((tag) => !tagIds.includes(tag.id))
-                      .map((tag) => (
-                        <option value={tag.id} key={tag.id}>
-                          {tag.name}
-                        </option>
-                      ))}
-                  </select>
-                  <input value={newTagName} onChange={(event) => setNewTagName(event.target.value)} placeholder="New tag name" />
-                  <input type="color" value={newTagColor} onChange={(event) => setNewTagColor(event.target.value)} />
-                  <button type="button" className="secondary-button" onClick={addNewTag}>
+                {editable && !tagPickerOpen && (
+                  <button type="button" className="secondary-button tag-add-trigger" onClick={() => setTagPickerOpen(true)}>
                     Add tag +
                   </button>
-                </div>
+                )}
+              </div>
+              {editable && (
+                <>
+                  {tagPickerOpen && (
+                    <div className="tag-mini-bar">
+                      <div className="tag-mini-input-row">
+                        <input
+                          value={tagQuery}
+                          onChange={(event) => setTagQuery(event.target.value)}
+                          onKeyDown={onTagQueryKeyDown}
+                          placeholder="Search or create a tag"
+                          autoFocus
+                        />
+                        <input type="color" value={newTagColor} onChange={(event) => setNewTagColor(event.target.value)} aria-label="Tag color" />
+                        <button type="button" className="icon-button" onClick={closeTagPicker} aria-label="Cancel tag add">
+                          <X size={16} />
+                        </button>
+                      </div>
+                      <ul className="tag-recommendations" aria-label="Tag recommendations">
+                        {recommendedTags.map((tag) => (
+                          <li className="tag-recommendation" key={tag.id}>
+                            <button type="button" className="tag-recommendation-button" onClick={() => selectRecommendedTag(tag.id)}>
+                              <span>{tag.name}</span>
+                            </button>
+                          </li>
+                        ))}
+                        {tagQuery.trim() && recommendedTags.length === 0 && (
+                          <li className="tag-recommendation tag-create-hint">
+                            <span>Create &quot;{tagQuery.trim()}&quot; (press Enter)</span>
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -335,10 +414,10 @@ const IssueDetailPage: React.FC = () => {
             <section className="attachments-box">
               <div className="section-head">
                 <h2>{attachments.length} Attachment{attachments.length === 1 ? '' : 's'}</h2>
-                <label className="secondary-button file-button">
+                <button className="secondary-button file-button">
                   + Add file
                   <input type="file" multiple hidden onChange={(event) => uploadFiles(event.target.files)} />
-                </label>
+                </button>
               </div>
               {attachments.length === 0 ? (
                 <p className="muted">No attachments yet.</p>

@@ -12,31 +12,80 @@ export type AppUser = {
 type UserState = {
   users: AppUser[]
   selectedId: number
+  pendingSelectedId: number | null
+  isEditingIssue: boolean
   setSelected: (id: number | string) => void
+  setEditingIssue: (editing: boolean) => void
+  applyPendingSelection: () => void
 }
 
 const hardcodedUsers: AppUser[] = [
   {
     id: 1,
-    displayName: 'EncryptEx',
+    displayName: 'Jaume Lopez',
     username: 'EncryptEx',
-    email: 'user@example.com',
-    apiKey: 'd519c9b214466e4e841b7571a8304c7e49e3f743799c3b011d3f6e250aa931b1'
-  }, 
+    email: 'limusina10@gmail.com',
+    apiKey: '161501b8eff0fefe6ea3762894f5dfa77bc0a8efa3987f32a6316c8e39de75f0'
+  },
   {
     id: 2,
-    displayName: 'marc',
-    username: 'marc',
-    email: 'marc@example.com',
-    apiKey: '229c698ebababd0847efcaa89f75ae1bff9e159bfeafc7d7e8377cf295111778'
+    displayName: 'marcal',
+    username: 'marcaltm19',
+    email: 'marcal.tejedor@estudiantat.upc.edu',
+    apiKey: 'bdd28a6a3d8e899dcd86d75142b7425de72f0b5b9826b3d47904897ae53124b6'
+  },
+  {
+    id: 3,
+    displayName: 'kaleb',
+    username: 'kalebgrove',
+    email: 'kwolfgrove@gmail.com',
+    apiKey: '844ad76ca307bd94bf0953b59c26d4fe14b5127b10a3f7121d2e5c1fc3bc6a7f'
   }
 ]
 
-export const useUserStore = create<UserState>((set) => ({
+export const useUserStore = create<UserState>((set, get) => ({
   users: hardcodedUsers,
-  selectedId: hardcodedUsers[0].id,
+  selectedId: (() => {
+    try {
+      const raw = localStorage.getItem('selectedId')
+      const parsed = raw !== null ? Number(raw) : NaN
+      return Number.isFinite(parsed) ? parsed : hardcodedUsers[0].id
+    } catch (e) {
+      return hardcodedUsers[0].id
+    }
+  })(),
+  pendingSelectedId: null,
+  isEditingIssue: false,
   setSelected(id) {
-    set({ selectedId: Number(id) })
+    if (get().isEditingIssue) {
+      set({ pendingSelectedId: Number(id) })
+    } else {
+      const num = Number(id)
+      set({ selectedId: num })
+      try {
+        localStorage.setItem('selectedId', String(num))
+      } catch (e) {
+        // ignore
+      }
+      window.location.reload()
+    }
+  },
+  setEditingIssue(editing) {
+    set({ isEditingIssue: editing })
+  },
+  applyPendingSelection() {
+    const { pendingSelectedId } = get()
+    if (pendingSelectedId !== null) {
+      set({ selectedId: pendingSelectedId, pendingSelectedId: null, isEditingIssue: false })
+      try {
+        localStorage.setItem('selectedId', String(pendingSelectedId))
+      } catch (e) {
+        // ignore
+      }
+      window.location.reload()
+    } else {
+      set({ isEditingIssue: false })
+    }
   }
 }))
 
