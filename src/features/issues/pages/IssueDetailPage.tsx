@@ -258,25 +258,28 @@ const IssueDetailPage: React.FC = () => {
     const assigneeChanged = assignedToId !== initialAssignedToId
     const shouldUpdateIssue = editable || assigneeChanged || watcherChanged
 
-    const payload: IssuePayload = editable
-      ? {
-          title: title.trim(),
-          description: description.trim(),
-          blocker: blocker.trim() || null,
-          due_date: dueDate || null,
-          type_id: typeId ? Number(typeId) : null,
-          severity_id: severityId ? Number(severityId) : null,
-          priority_id: priorityId ? Number(priorityId) : null,
-          status_id: statusId ? Number(statusId) : null,
-          assigned_to_id: assignedToId ? Number(assignedToId) : null,
-          tag_ids: tagIds,
-          new_tags: newTags,
-          watcher_ids: watcherIds
-        }
-      : {
-          assigned_to_id: assignedToId ? Number(assignedToId) : null,
-          watcher_ids: watcherIds
-        }
+    let payload: IssuePayload
+    if (editable) {
+      payload = {
+        title: title.trim(),
+        description: description.trim(),
+        blocker: blocker.trim() || null,
+        due_date: dueDate || null,
+        type_id: typeId ? Number(typeId) : null,
+        severity_id: severityId ? Number(severityId) : null,
+        priority_id: priorityId ? Number(priorityId) : null,
+        status_id: statusId ? Number(statusId) : null,
+        assigned_to_id: assignedToId ? Number(assignedToId) : null,
+        tag_ids: tagIds,
+        new_tags: newTags,
+        watcher_ids: watcherIds
+      }
+    } else {
+      payload = {
+        assigned_to_id: assignedToId ? Number(assignedToId) : null,
+        watcher_ids: watcherIds
+      } as IssuePayload
+    }
     setSaving(true)
     try {
       if (shouldUpdateIssue) {
