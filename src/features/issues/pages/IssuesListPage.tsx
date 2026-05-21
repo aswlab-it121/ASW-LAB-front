@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronDown, Clock, Filter, ListPlus, Lock, Plus, Search, Settings } from 'lucide-react'
+import { useUserStore } from '../../../app/store/userStore'
 import { useIssues } from '../hooks/useIssues'
 import { issuesApi } from '../api/issuesApi'
 import { usersApi } from '../../users/api/usersApi'
+import { profilePath } from '../../users/utils/profilePath'
 import { settingsApi } from '../../settings/api/settingsApi'
 import { ApiUser, DueDateStatus, Issue } from '../types'
 
@@ -75,6 +77,7 @@ function resolveDueDateColor(issue: Issue, statuses: DueDateStatus[]) {
 
 const IssuesListPage: React.FC = () => {
   const { data: issues, loading, error, reload } = useIssues()
+  const selectedId = useUserStore((state) => state.selectedId)
   const [users, setUsers] = useState<ApiUser[]>([])
   const [dueStatuses, setDueStatuses] = useState<DueDateStatus[]>([])
   const [query, setQuery] = useState('')
@@ -308,20 +311,32 @@ const IssuesListPage: React.FC = () => {
                     {issue.status?.name || 'New'}
                   </span>
                   <span className="issue-modified">{readableDate(issue.updated_at)}</span>
-                  <button
-                    type="button"
-                    className="assignee-button"
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      setAssigneeIssue(issue)
-                      setAssigneeId(issue.assigned_to?.id ? String(issue.assigned_to.id) : '')
-                    }}
-                  >
-                    <span className="app-avatar app-avatar--small">
-                      {issue.assigned_to?.photo ? <img src={issue.assigned_to.photo} alt="" /> : initials(issue.assigned_to?.username)}
-                    </span>
-                    <ChevronDown size={16} />
-                  </button>
+                  <div className="assignee-cell" onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
+                    {issue.assigned_to ? (
+                      <Link className="assignee-profile-link" to={profilePath(issue.assigned_to, selectedId)}>
+                        <span className="app-avatar app-avatar--small">
+                          {issue.assigned_to.photo ? <img src={issue.assigned_to.photo} alt="" /> : initials(issue.assigned_to.username)}
+                        </span>
+                        <span>{issue.assigned_to.username}</span>
+                      </Link>
+                    ) : (
+                      <span className="assignee-profile-link is-empty">
+                        <span className="app-avatar app-avatar--small">{initials()}</span>
+                        <span>Unassigned</span>
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className="assignee-edit-button"
+                      onClick={() => {
+                        setAssigneeIssue(issue)
+                        setAssigneeId(issue.assigned_to?.id ? String(issue.assigned_to.id) : '')
+                      }}
+                      aria-label="Change assignee"
+                    >
+                      <ChevronDown size={16} />
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>

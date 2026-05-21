@@ -7,6 +7,7 @@ import { attachmentsApi } from '../../attachments/api/attachmentsApi'
 import { commentsApi } from '../../comments/api/commentsApi'
 import { settingsApi } from '../../settings/api/settingsApi'
 import { usersApi } from '../../users/api/usersApi'
+import { profilePath } from '../../users/utils/profilePath'
 import { watchersApi } from '../../watchers/api/watchersApi'
 import { issuesApi } from '../api/issuesApi'
 import { canDeleteAttachment, canDeleteComment, canDeleteIssue, canEditComment, canEditIssue } from '../../../lib/permissions'
@@ -63,20 +64,19 @@ function initials(user?: ApiUserBrief | null) {
   return (user?.username || 'UN').slice(0, 2).toUpperCase()
 }
 
-function activityText(activity: ActivityLog) {
-  const name = activity.user?.username || 'Someone'
-  if (activity.action === 'created') return `${name} created this issue`
-  if (activity.action === 'comment_added') return `${name} added a comment`
-  if (activity.action === 'comment_edited') return `${name} edited a comment`
-  if (activity.action === 'comment_deleted') return `${name} deleted a comment`
-  if (activity.action === 'attachment_added') return `${name} added attachment ${activity.new_value || ''}`
-  if (activity.action === 'attachment_deleted') return `${name} deleted attachment ${activity.old_value || ''}`
-  if (activity.action === 'watcher_added') return `${name} added ${activity.new_value || 'a watcher'} to watchers`
-  if (activity.action === 'watcher_removed') return `${name} removed ${activity.old_value || 'a watcher'} from watchers`
+function activityActionText(activity: ActivityLog) {
+  if (activity.action === 'created') return 'created this issue'
+  if (activity.action === 'comment_added') return 'added a comment'
+  if (activity.action === 'comment_edited') return 'edited a comment'
+  if (activity.action === 'comment_deleted') return 'deleted a comment'
+  if (activity.action === 'attachment_added') return `added attachment ${activity.new_value || ''}`
+  if (activity.action === 'attachment_deleted') return `deleted attachment ${activity.old_value || ''}`
+  if (activity.action === 'watcher_added') return `added ${activity.new_value || 'a watcher'} to watchers`
+  if (activity.action === 'watcher_removed') return `removed ${activity.old_value || 'a watcher'} from watchers`
   if (activity.action === 'field_changed') {
-    return `${name} changed ${activity.field_name || 'a field'} from ${activity.old_value || 'empty'} to ${activity.new_value || 'empty'}`
+    return `changed ${activity.field_name || 'a field'} from ${activity.old_value || 'empty'} to ${activity.new_value || 'empty'}`
   }
-  return `${name} ${activity.action}`
+  return activity.action
 }
 
 const IssueDetailPage: React.FC = () => {
@@ -356,7 +356,15 @@ const IssueDetailPage: React.FC = () => {
                           <span>{attachment.original_name}</span>
                         )}
                         <p>
-                          {fileSize(attachment.size)} · uploaded by {attachment.owner?.username || 'unknown'} · {formatDate(attachment.created_at)}
+                          {fileSize(attachment.size)} · uploaded by{' '}
+                          {attachment.owner ? (
+                            <Link className="user-profile-link" to={profilePath(attachment.owner, currentUser?.id)}>
+                              {attachment.owner.username}
+                            </Link>
+                          ) : (
+                            'unknown'
+                          )}{' '}
+                          · {formatDate(attachment.created_at)}
                         </p>
                       </div>
                       {canDeleteAttachment(attachment, currentUser) && (
@@ -401,9 +409,12 @@ const IssueDetailPage: React.FC = () => {
               <div className="watchers-display">
                 {watchers.length === 0 && <span className="muted">No watchers</span>}
                 {watchers.map((watcher) => (
-                  <button type="button" className="watcher-chip" key={watcher.id} onClick={() => removeWatcher(watcher.id)}>
-                    {watcher.username} x
-                  </button>
+                  <span className="watcher-chip watcher-chip--linked" key={watcher.id}>
+                    <Link to={profilePath(watcher, currentUser?.id)}>{watcher.username}</Link>
+                    <button type="button" onClick={() => removeWatcher(watcher.id)} aria-label={`Remove ${watcher.username} from watchers`}>
+                      x
+                    </button>
+                  </span>
                 ))}
               </div>
               <div className="inline-row">
@@ -508,10 +519,24 @@ const IssueDetailPage: React.FC = () => {
               <ul className="comments-list">
                 {comments.map((comment) => (
                   <li className="comment-item" key={comment.id}>
-                    <span className="app-avatar">{comment.user?.photo ? <img src={comment.user.photo} alt="" /> : initials(comment.user)}</span>
+                    {comment.user ? (
+                      <Link className="app-avatar profile-avatar-link" to={profilePath(comment.user, currentUser?.id)} aria-label={`View ${comment.user.username} profile`}>
+                        {comment.user.photo ? <img src={comment.user.photo} alt="" /> : initials(comment.user)}
+                      </Link>
+                    ) : (
+                      <span className="app-avatar">{initials(comment.user)}</span>
+                    )}
                     <div className="comment-body">
                       <div className="comment-meta">
-                        <strong>{comment.user?.username || 'Unknown user'}</strong>
+                        <strong>
+                          {comment.user ? (
+                            <Link className="user-profile-link" to={profilePath(comment.user, currentUser?.id)}>
+                              {comment.user.username}
+                            </Link>
+                          ) : (
+                            'Unknown user'
+                          )}
+                        </strong>
                         <span>{formatDate(comment.created_at)}</span>
                       </div>
                       {editingCommentId === comment.id ? (
@@ -558,11 +583,24 @@ const IssueDetailPage: React.FC = () => {
               <ul className="activity-list">
                 {activities.map((activity) => (
                   <li className="activity-item" key={activity.id}>
-                    <span className="app-avatar app-avatar--small">
-                      {activity.user?.photo ? <img src={activity.user.photo} alt="" /> : initials(activity.user)}
-                    </span>
+                    {activity.user ? (
+                      <Link className="app-avatar app-avatar--small profile-avatar-link" to={profilePath(activity.user, currentUser?.id)} aria-label={`View ${activity.user.username} profile`}>
+                        {activity.user.photo ? <img src={activity.user.photo} alt="" /> : initials(activity.user)}
+                      </Link>
+                    ) : (
+                      <span className="app-avatar app-avatar--small">{initials(activity.user)}</span>
+                    )}
                     <div>
-                      <p>{activityText(activity)}</p>
+                      <p>
+                        {activity.user ? (
+                          <Link className="user-profile-link" to={profilePath(activity.user, currentUser?.id)}>
+                            {activity.user.username}
+                          </Link>
+                        ) : (
+                          'Someone'
+                        )}{' '}
+                        {activityActionText(activity)}
+                      </p>
                       <span>{formatDate(activity.timestamp)}</span>
                     </div>
                   </li>

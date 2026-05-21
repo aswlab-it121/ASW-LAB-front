@@ -390,7 +390,7 @@ select:disabled {
 .issues-list-head,
 .issue-row {
   display: grid;
-  grid-template-columns: 58px 78px 78px minmax(220px, 1fr) 120px 132px 102px;
+  grid-template-columns: 58px 78px 78px minmax(220px, 1fr) 120px 132px 150px;
   align-items: center;
   gap: 10px;
 }
@@ -489,6 +489,34 @@ select:disabled {
   font-weight: 800;
 }
 
+.watcher-chip--linked {
+  gap: 6px;
+  padding-right: 4px;
+  background: var(--brand);
+}
+
+.watcher-chip--linked a {
+  color: #fff;
+  text-decoration: none;
+}
+
+.watcher-chip--linked a:hover {
+  text-decoration: underline;
+}
+
+.watcher-chip--linked button {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
 .issues-list.hide-tags .issue-chip {
   display: none;
 }
@@ -522,7 +550,8 @@ select:disabled {
   font-size: 0.9rem;
 }
 
-.assignee-button {
+.assignee-button,
+.assignee-cell {
   justify-self: start;
   min-height: 40px;
   border: 1px solid #d7e3f2;
@@ -532,6 +561,58 @@ select:disabled {
   gap: 6px;
   background: #f8fbff;
   color: var(--brand);
+}
+
+.assignee-cell {
+  max-width: 100%;
+  padding: 3px 4px;
+}
+
+.assignee-profile-link {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--brand-dark);
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.assignee-profile-link span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assignee-profile-link:hover span:last-child,
+.user-profile-link:hover {
+  text-decoration: underline;
+}
+
+.assignee-profile-link.is-empty {
+  color: var(--muted);
+}
+
+.assignee-edit-button {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: transparent;
+  color: var(--brand);
+}
+
+.assignee-edit-button:hover {
+  background: #eaf4ff;
+}
+
+.profile-avatar-link,
+.user-profile-link {
+  color: inherit;
+  text-decoration: none;
 }
 
 .modal-page {
@@ -967,6 +1048,10 @@ select:disabled {
   gap: 18px;
 }
 
+.profile-page--view .profile-sidebar {
+  gap: 16px;
+}
+
 .profile-avatar-panel {
   display: grid;
   gap: 10px;
@@ -997,6 +1082,62 @@ select:disabled {
 .profile-avatar-panel h1 {
   color: var(--brand);
   font-size: 1.3rem;
+}
+
+.profile-title-block {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  text-align: center;
+}
+
+.profile-title-block h1,
+.profile-title-block p,
+.profile-content-head h2,
+.api-key-panel h2,
+.profile-comment-card p {
+  margin: 0;
+}
+
+.profile-title-block h1,
+.profile-content-head h2 {
+  color: var(--brand);
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.profile-title-block p,
+.profile-bio-empty,
+.api-key-panel p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.profile-bio,
+.profile-bio-empty {
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.profile-bio-empty {
+  font-style: italic;
+}
+
+.sidebar-actions,
+.profile-content-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sidebar-actions {
+  display: grid;
+}
+
+.profile-content-head {
+  justify-content: space-between;
 }
 
 .stats-grid {
@@ -1034,6 +1175,188 @@ select:disabled {
   justify-content: space-between;
 }
 
+.profile-tabs {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  border-bottom: 2px solid #dbe6f5;
+}
+
+.profile-tabs button {
+  position: relative;
+  min-height: 46px;
+  border: 0;
+  padding: 0 18px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.profile-tabs button:hover,
+.profile-tabs button.is-active {
+  color: var(--ink);
+}
+
+.profile-tabs button.is-active::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -2px;
+  left: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--brand);
+}
+
+.profile-issues-table,
+.profile-comments-list {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-issues-head,
+.profile-issue-row {
+  display: grid;
+  grid-template-columns: 36px 36px 36px minmax(180px, 1fr) 120px 112px;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-issues-head {
+  padding: 0 14px;
+  color: #8694ad;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.profile-issue-row {
+  min-height: 58px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f6f7fc;
+  color: inherit;
+  text-decoration: none;
+}
+
+.profile-issue-row:hover {
+  background: #edf3fc;
+}
+
+.profile-issue-summary {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-issue-id,
+.profile-comment-issue-id {
+  color: #0098da;
+  font-weight: 800;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.profile-issue-title,
+.profile-comment-issue-title {
+  min-width: 0;
+  overflow: hidden;
+  color: #263456;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.profile-issue-row:hover .profile-issue-title,
+.profile-comment-issue-id:hover,
+.profile-comment-issue-title:hover {
+  text-decoration: underline;
+}
+
+.profile-issue-status {
+  color: var(--status-color, #47a5ef);
+  font-weight: 800;
+}
+
+.profile-issue-modified,
+.profile-comment-head span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.profile-comments-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.profile-comment-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 1px solid #dce6f2;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.profile-comment-card:hover {
+  border-color: #c3d2e6;
+}
+
+.profile-comment-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.profile-comment-issue {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.profile-comment-card p {
+  color: #24364b;
+  font-size: 0.94rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.profile-comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-comment-edit {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-comment-edit textarea {
+  width: 100%;
+  min-height: 96px;
+  border: 1px solid #cad7e8;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--ink);
+  background: #fff;
+  resize: vertical;
+}
+
+.profile-comment-edit .profile-comment-actions {
+  justify-content: flex-end;
+}
+
 @media (max-width: 1000px) {
   .app-root {
     padding: 12px;
@@ -1066,6 +1389,25 @@ select:disabled {
   .issue-status,
   .issue-modified {
     display: none;
+  }
+
+  .assignee-profile-link span:last-child {
+    display: none;
+  }
+
+  .profile-issues-head {
+    display: none;
+  }
+
+  .profile-issue-row {
+    grid-template-columns: 24px 24px 24px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 8px;
+  }
+
+  .profile-issue-status,
+  .profile-issue-modified {
+    grid-column: 1 / -1;
   }
 
   .search-control input {

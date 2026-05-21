@@ -8,6 +8,7 @@ import BulkInsertPage from './features/issues/pages/BulkInsertPage'
 import SettingsPage from './pages/SettingsPage'
 import UserProfilePage from './features/users/pages/UserProfilePage'
 import ProfilePage from './pages/ProfilePage'
+import ProfileEditPage from './pages/ProfileEditPage'
 
 const App: React.FC = () => {
   return (
@@ -21,6 +22,7 @@ const App: React.FC = () => {
         <Route path="/issues/:issueId/edit" element={<IssueDetailPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/users/:userId" element={<UserProfilePage />} />
+        <Route path="/profile/edit" element={<ProfileEditPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

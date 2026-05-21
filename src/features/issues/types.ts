@@ -122,6 +122,7 @@ export type UserCommentEntry = {
   id: number
   comment: string
   issue_id: number
+  issue_title?: string
   created_at: string
   url: string
 }
