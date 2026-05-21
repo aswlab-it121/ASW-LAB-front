@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ChevronDown, Clock, Filter, ListPlus, Lock, Plus, Search, Settings } from 'lucide-react'
+import { ChevronDown, Clock, Filter, ListPlus, Lock, Plus, Search } from 'lucide-react'
 import { getSelectedUser, useUserStore } from '../../../app/store/userStore'
 import { canEditIssue } from '../../../lib/permissions'
 import { useIssues } from '../hooks/useIssues'
 import { issuesApi } from '../api/issuesApi'
 import { usersApi } from '../../users/api/usersApi'
-import { profilePath } from '../../users/utils/profilePath'
 import { settingsApi } from '../../settings/api/settingsApi'
 import { ApiUser, DueDateStatus, Issue } from '../types'
 
@@ -183,14 +182,6 @@ const IssuesListPage: React.FC = () => {
     <section className="issues-page">
       <div className="page-header">
         <h1>Issues</h1>
-        <div className="header-actions">
-          <Link to="/settings" className="icon-button" aria-label="Issue settings">
-            <Settings size={19} />
-          </Link>
-          <Link to="/profile" className="icon-button owner-link" aria-label="View profile">
-            Profile
-          </Link>
-        </div>
       </div>
 
       <div className="issues-toolbar">

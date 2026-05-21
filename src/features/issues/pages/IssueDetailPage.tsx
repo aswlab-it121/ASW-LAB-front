@@ -245,20 +245,25 @@ const IssueDetailPage: React.FC = () => {
     event.preventDefault()
     if (!issue) return
     setError(null)
-    const payload: IssuePayload = {
-      title: title.trim(),
-      description: description.trim(),
-      blocker: blocker.trim() || null,
-      due_date: dueDate || null,
-      type_id: typeId ? Number(typeId) : null,
-      severity_id: severityId ? Number(severityId) : null,
-      priority_id: priorityId ? Number(priorityId) : null,
-      status_id: statusId ? Number(statusId) : null,
-      assigned_to_id: assignedToId ? Number(assignedToId) : null,
-      tag_ids: tagIds,
-      new_tags: newTags,
-      watcher_ids: watcherIds
-    }
+    const payload: IssuePayload = editable
+      ? {
+          title: title.trim(),
+          description: description.trim(),
+          blocker: blocker.trim() || null,
+          due_date: dueDate || null,
+          type_id: typeId ? Number(typeId) : null,
+          severity_id: severityId ? Number(severityId) : null,
+          priority_id: priorityId ? Number(priorityId) : null,
+          status_id: statusId ? Number(statusId) : null,
+          assigned_to_id: assignedToId ? Number(assignedToId) : null,
+          tag_ids: tagIds,
+          new_tags: newTags,
+          watcher_ids: watcherIds
+        }
+      : {
+          assigned_to_id: assignedToId ? Number(assignedToId) : null,
+          watcher_ids: watcherIds
+        }
     setSaving(true)
     try {
       await issuesApi.update(issue.id, payload)
@@ -480,7 +485,7 @@ const IssueDetailPage: React.FC = () => {
 
             <label className="field">
               <span>Assigned</span>
-              <select value={assignedToId} onChange={(event) => setAssignedToId(event.target.value)} disabled={!editable}>
+              <select value={assignedToId} onChange={(event) => setAssignedToId(event.target.value)} disabled={saving}>
                 <option value="">Unassigned</option>
                 {refs.users.map((user) => (
                   <option value={user.id} key={user.id}>
@@ -497,14 +502,19 @@ const IssueDetailPage: React.FC = () => {
                 {visibleWatchers.map((watcher) => (
                   <span className="watcher-chip watcher-chip--linked" key={watcher.id}>
                     <Link to={profilePath(watcher, currentUser?.id)}>{watcher.username}</Link>
-                    <button type="button" onClick={() => removeWatcher(watcher.id)} aria-label={`Remove ${watcher.username} from watchers`}>
+                    <button
+                      type="button"
+                      onClick={() => removeWatcher(watcher.id)}
+                      aria-label={`Remove ${watcher.username} from watchers`}
+                      disabled={saving}
+                    >
                       x
                     </button>
                   </span>
                 ))}
               </div>
               <div className="inline-row">
-                <select value={watcherToAdd} onChange={(event) => setWatcherToAdd(event.target.value)}>
+                <select value={watcherToAdd} onChange={(event) => setWatcherToAdd(event.target.value)} disabled={saving}>
                   <option value="">Add watcher</option>
                   {availableWatchers.map((user) => (
                     <option value={user.id} key={user.id}>
@@ -512,10 +522,10 @@ const IssueDetailPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <button type="button" className="secondary-button" onClick={() => addWatcher(watcherToAdd)}>
+                <button type="button" className="secondary-button" onClick={() => addWatcher(watcherToAdd)} disabled={saving}>
                   Add
                 </button>
-                <button type="button" className="secondary-button" onClick={watchAsMe}>
+                <button type="button" className="secondary-button" onClick={watchAsMe} disabled={saving}>
                   Watch
                 </button>
               </div>
@@ -575,7 +585,7 @@ const IssueDetailPage: React.FC = () => {
               Delete
             </button>
           )}
-          <button type="submit" className="primary-button" disabled={!editable || saving}>
+          <button type="submit" className="primary-button" disabled={saving}>
             {saving ? 'Saving...' : 'Save changes'}
           </button>
         </div>

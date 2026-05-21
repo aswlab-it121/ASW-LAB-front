@@ -91,6 +91,10 @@ select:disabled {
   gap: 14px;
 }
 
+.app-body.app-body--no-sidebar {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .app-sidebar,
 .app-main {
   border: 1px solid rgba(160, 177, 201, 0.26);
