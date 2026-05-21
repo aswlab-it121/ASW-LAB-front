@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Paperclip, Trash2, X } from 'lucide-react'
 import { getSelectedUser, useUserStore } from '../../../app/store/userStore'
@@ -115,6 +115,7 @@ const IssueDetailPage: React.FC = () => {
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null)
   const [editingCommentText, setEditingCommentText] = useState('')
   const [watcherToAdd, setWatcherToAdd] = useState('')
+  const attachmentsInputRef = useRef<HTMLInputElement | null>(null)
 
   async function loadAll() {
     if (!issueId) return
@@ -430,7 +431,7 @@ const IssueDetailPage: React.FC = () => {
               <div className="section-head">
                 <h2>{attachments.length + pendingFiles.length} Attachment{attachments.length + pendingFiles.length === 1 ? '' : 's'}</h2>
                 <input
-                  id="issue-attachments-input"
+                  ref={attachmentsInputRef}
                   type="file"
                   multiple
                   hidden
@@ -440,9 +441,14 @@ const IssueDetailPage: React.FC = () => {
                     event.target.value = ''
                   }}
                 />
-                <label htmlFor="issue-attachments-input" className="secondary-button file-button" aria-disabled={saving}>
+                <button
+                  type="button"
+                  className="secondary-button file-button"
+                  disabled={saving}
+                  onClick={() => attachmentsInputRef.current?.click()}
+                >
                   + Add file
-                </label>
+                </button>
               </div>
               {pendingFiles.length > 0 && (
                 <p className="pending-uploads-note">
