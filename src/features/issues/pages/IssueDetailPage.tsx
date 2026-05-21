@@ -89,6 +89,7 @@ const IssueDetailPage: React.FC = () => {
   const [refs, setRefs] = useState<ReferenceData>(emptyRefs)
   const [comments, setComments] = useState<IssueComment[]>([])
   const [attachments, setAttachments] = useState<IssueAttachment[]>([])
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [watcherIds, setWatcherIds] = useState<number[]>([])
   const [activities, setActivities] = useState<ActivityLog[]>([])
   const [tab, setTab] = useState<'comments' | 'activities'>('comments')
@@ -267,6 +268,10 @@ const IssueDetailPage: React.FC = () => {
     setSaving(true)
     try {
       await issuesApi.update(issue.id, payload)
+      if (pendingFiles.length > 0) {
+        await attachmentsApi.upload(issue.id, pendingFiles)
+        setPendingFiles([])
+      }
       applyPendingSelection()
       nav('/issues')
     } catch (err: any) {
@@ -304,10 +309,13 @@ const IssueDetailPage: React.FC = () => {
     await loadAll()
   }
 
-  async function uploadFiles(files: FileList | null) {
-    if (!issue || !files || files.length === 0) return
-    await attachmentsApi.upload(issue.id, files)
-    await loadAll()
+  function uploadFiles(files: FileList | null) {
+    if (!files || files.length === 0) return
+    setPendingFiles((current) => [...current, ...Array.from(files)])
+  }
+
+  function removePendingFile(index: number) {
+    setPendingFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))
   }
 
   async function deleteAttachment(attachmentId: number) {
@@ -420,47 +428,77 @@ const IssueDetailPage: React.FC = () => {
 
             <section className="attachments-box">
               <div className="section-head">
-                <h2>{attachments.length} Attachment{attachments.length === 1 ? '' : 's'}</h2>
-                <input id="issue-attachments-input" type="file" multiple hidden disabled={saving} onChange={(event) => uploadFiles(event.target.files)} />
+                <h2>{attachments.length + pendingFiles.length} Attachment{attachments.length + pendingFiles.length === 1 ? '' : 's'}</h2>
+                <input
+                  id="issue-attachments-input"
+                  type="file"
+                  multiple
+                  hidden
+                  disabled={saving}
+                  onChange={(event) => {
+                    uploadFiles(event.target.files)
+                    event.target.value = ''
+                  }}
+                />
                 <label htmlFor="issue-attachments-input" className="secondary-button file-button" aria-disabled={saving}>
                   + Add file
                 </label>
               </div>
-              {attachments.length === 0 ? (
-                <p className="muted">No attachments yet.</p>
-              ) : (
+              {pendingFiles.length > 0 && (
                 <ul className="attachment-list">
-                  {attachments.map((attachment) => (
-                    <li className="attachment-item" key={attachment.id}>
+                  {pendingFiles.map((file, index) => (
+                    <li className="attachment-item" key={`${file.name}-${file.size}-${index}`}>
                       <Paperclip size={16} />
                       <div>
-                        {attachment.url ? (
-                          <a href={attachment.url} target="_blank" rel="noreferrer">
-                            {attachment.original_name}
-                          </a>
-                        ) : (
-                          <span>{attachment.original_name}</span>
-                        )}
+                        <span>{file.name}</span>
                         <p>
-                          {fileSize(attachment.size)} · uploaded by{' '}
-                          {attachment.owner ? (
-                            <Link className="user-profile-link" to={profilePath(attachment.owner, currentUser?.id)}>
-                              {attachment.owner.username}
-                            </Link>
-                          ) : (
-                            'unknown'
-                          )}{' '}
-                          · {formatDate(attachment.created_at)}
+                          {fileSize(file.size)} · ready to upload on save
                         </p>
                       </div>
-                      {canDeleteAttachment(attachment, currentUser) && (
-                        <button type="button" className="icon-danger" onClick={() => deleteAttachment(attachment.id)} aria-label="Delete attachment">
-                          <Trash2 size={16} />
-                        </button>
-                      )}
+                      <button type="button" className="icon-danger" onClick={() => removePendingFile(index)} aria-label="Remove pending attachment">
+                        <Trash2 size={16} />
+                      </button>
                     </li>
                   ))}
                 </ul>
+              )}
+              {attachments.length === 0 && pendingFiles.length === 0 ? (
+                <p className="muted">No attachments yet.</p>
+              ) : (
+                attachments.length > 0 && (
+                  <ul className="attachment-list">
+                    {attachments.map((attachment) => (
+                      <li className="attachment-item" key={attachment.id}>
+                        <Paperclip size={16} />
+                        <div>
+                          {attachment.url ? (
+                            <a href={attachment.url} target="_blank" rel="noreferrer">
+                              {attachment.original_name}
+                            </a>
+                          ) : (
+                            <span>{attachment.original_name}</span>
+                          )}
+                          <p>
+                            {fileSize(attachment.size)} · uploaded by{' '}
+                            {attachment.owner ? (
+                              <Link className="user-profile-link" to={profilePath(attachment.owner, currentUser?.id)}>
+                                {attachment.owner.username}
+                              </Link>
+                            ) : (
+                              'unknown'
+                            )}{' '}
+                            · {formatDate(attachment.created_at)}
+                          </p>
+                        </div>
+                        {canDeleteAttachment(attachment, currentUser) && (
+                          <button type="button" className="icon-danger" onClick={() => deleteAttachment(attachment.id)} aria-label="Delete attachment">
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )
               )}
             </section>
           </div>
