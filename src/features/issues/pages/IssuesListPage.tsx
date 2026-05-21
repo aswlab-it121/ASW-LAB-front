@@ -6,6 +6,7 @@ import { canEditIssue } from '../../../lib/permissions'
 import { useIssues } from '../hooks/useIssues'
 import { issuesApi } from '../api/issuesApi'
 import { usersApi } from '../../users/api/usersApi'
+import { profilePath } from '../../users/utils/profilePath'
 import { settingsApi } from '../../settings/api/settingsApi'
 import { ApiUser, DueDateStatus, Issue } from '../types'
 

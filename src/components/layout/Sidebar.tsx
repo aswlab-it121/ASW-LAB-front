@@ -1,6 +1,6 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
-import { ListPlus, ListTodo, Plus, Settings, UserCircle } from 'lucide-react'
+import { ListTodo, Settings, UserCircle } from 'lucide-react'
 
 const Sidebar: React.FC = () => {
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -12,14 +12,6 @@ const Sidebar: React.FC = () => {
         <NavLink to="/issues" className={linkClass}>
           <ListTodo size={18} />
           Issues
-        </NavLink>
-        <NavLink to="/issues/new" className={linkClass}>
-          <Plus size={18} />
-          New Issue
-        </NavLink>
-        <NavLink to="/issues/bulk-insert" className={linkClass}>
-          <ListPlus size={18} />
-          Bulk Insert
         </NavLink>
         <NavLink to="/settings" className={linkClass}>
           <Settings size={18} />
