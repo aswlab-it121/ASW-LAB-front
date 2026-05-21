@@ -328,11 +328,6 @@ const IssueDetailPage: React.FC = () => {
     setWatcherIds((current) => current.filter((id) => id !== userId))
   }
 
-  async function watchAsMe() {
-    if (!currentUser) return
-    await addWatcher(String(currentUser.id))
-  }
-
   if (loading) return <div className="empty-state">Loading issue...</div>
   if (error) return <div className="error-state">{error}</div>
   if (!issue) return <div className="empty-state">Issue not found.</div>
@@ -426,7 +421,7 @@ const IssueDetailPage: React.FC = () => {
             <section className="attachments-box">
               <div className="section-head">
                 <h2>{attachments.length} Attachment{attachments.length === 1 ? '' : 's'}</h2>
-                <button className="secondary-button file-button">
+                <button type="button" className="secondary-button file-button" disabled={saving}>
                   + Add file
                   <input type="file" multiple hidden onChange={(event) => uploadFiles(event.target.files)} />
                 </button>
@@ -524,9 +519,6 @@ const IssueDetailPage: React.FC = () => {
                 </select>
                 <button type="button" className="secondary-button" onClick={() => addWatcher(watcherToAdd)} disabled={saving}>
                   Add
-                </button>
-                <button type="button" className="secondary-button" onClick={watchAsMe} disabled={saving}>
-                  Watch
                 </button>
               </div>
             </section>
