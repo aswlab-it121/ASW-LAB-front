@@ -473,33 +473,33 @@ const IssueDetailPage: React.FC = () => {
                   disabled={saving}
                   onClick={openAttachmentPicker}
                 >
-                  + Add file
+                  + Add file{pendingFiles.length > 0 ? ` (${pendingFiles.length} pending)` : ''}
                 </button>
               </div>
               {pendingFiles.length > 0 && (
-                <p className="pending-uploads-note">
-                  {pendingFiles.length} file{pendingFiles.length === 1 ? '' : 's'} pending upload. They will be uploaded when you save.
-                </p>
-              )}
-              {pendingFiles.length > 0 && (
-                <ul className="attachment-list">
-                  {pendingFiles.map((file, index) => (
-                    <li className="attachment-item attachment-item--pending" key={`${file.name}-${file.size}-${index}`}>
-                      <Paperclip size={16} />
-                      <div>
-                        <span>
-                          {file.name} <span className="pending-badge">Pending</span>
-                        </span>
-                        <p>
-                          {fileSize(file.size)} · ready to upload on save
-                        </p>
-                      </div>
-                      <button type="button" className="icon-danger" onClick={() => removePendingFile(index)} aria-label="Remove pending attachment">
-                        <Trash2 size={16} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <div className="pending-uploads-panel" aria-live="polite">
+                  <p className="pending-uploads-note">
+                    {pendingFiles.length} file{pendingFiles.length === 1 ? '' : 's'} selected and queued for upload.
+                  </p>
+                  <ul className="attachment-list">
+                    {pendingFiles.map((file, index) => (
+                      <li className="attachment-item attachment-item--pending" key={`${file.name}-${file.size}-${index}`}>
+                        <Paperclip size={16} />
+                        <div>
+                          <span>
+                            {file.name} <span className="pending-badge">Pending</span>
+                          </span>
+                          <p>
+                            {fileSize(file.size)} · will upload when you save
+                          </p>
+                        </div>
+                        <button type="button" className="icon-danger" onClick={() => removePendingFile(index)} aria-label="Remove pending attachment">
+                          <Trash2 size={16} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
               {attachments.length === 0 && pendingFiles.length === 0 ? (
                 <p className="muted">No attachments yet.</p>
