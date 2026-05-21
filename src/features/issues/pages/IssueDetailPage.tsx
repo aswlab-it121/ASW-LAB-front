@@ -118,15 +118,30 @@ const IssueDetailPage: React.FC = () => {
   const attachmentsInputRef = useRef<HTMLInputElement | null>(null)
   const [initialAssignedToId, setInitialAssignedToId] = useState('')
   const [initialWatcherIds, setInitialWatcherIds] = useState<number[]>([])
+  const [apiUserId, setApiUserId] = useState<number | null>(null)
 
   async function loadAll() {
     if (!issueId) return
     setLoading(true)
     setError(null)
     try {
-      const [loadedIssue, types, severities, priorities, statuses, tags, dueStatuses, users, loadedComments, loadedAttachments, loadedWatchers, loadedActivities] =
-        await Promise.all([
+      const [
+        loadedIssue,
+        apiMe,
+        types,
+        severities,
+        priorities,
+        statuses,
+        tags,
+        dueStatuses,
+        users,
+        loadedComments,
+        loadedAttachments,
+        loadedWatchers,
+        loadedActivities
+      ] = await Promise.all([
           issuesApi.get(issueId),
+          usersApi.me(),
           settingsApi.list<ReferenceItem>('types'),
           settingsApi.list<ReferenceItem>('severities'),
           settingsApi.list<ReferenceItem>('priorities'),
@@ -139,6 +154,7 @@ const IssueDetailPage: React.FC = () => {
           watchersApi.list(issueId),
           activitiesApi.list(issueId)
         ])
+      setApiUserId(apiMe.id)
       setIssue(loadedIssue)
       setRefs({ types, severities, priorities, statuses, tags, dueStatuses, users })
       setComments(loadedComments)
@@ -176,7 +192,10 @@ const IssueDetailPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const editable = useMemo(() => (issue ? canEditIssue(issue, currentUser) : false), [issue, currentUser])
+  const editable = useMemo(
+    () => (issue ? canEditIssue(issue, currentUser, apiUserId) : false),
+    [issue, currentUser, apiUserId]
+  )
   const selectedTags = useMemo(() => refs.tags.filter((tag) => tagIds.includes(tag.id)), [refs.tags, tagIds])
   const availableTags = useMemo(() => refs.tags.filter((tag) => !tagIds.includes(tag.id)), [refs.tags, tagIds])
   const recommendedTags = useMemo(() => {
@@ -256,36 +275,59 @@ const IssueDetailPage: React.FC = () => {
       sortedWatcherIds.length !== initialWatcherIds.length ||
       sortedWatcherIds.some((id, index) => id !== initialWatcherIds[index])
     const assigneeChanged = assignedToId !== initialAssignedToId
-    const shouldUpdateIssue = editable || assigneeChanged || watcherChanged
+    const loadedTagIds = issue.tags.map((tag) => tag.id).sort((a, b) => a - b)
+    const currentTagIds = [...tagIds].sort((a, b) => a - b)
+    const tagsChanged =
+      loadedTagIds.length !== currentTagIds.length ||
+      loadedTagIds.some((id, index) => id !== currentTagIds[index])
+    const coreFieldsChanged =
+      editable &&
+      (title.trim() !== (issue.title || '').trim() ||
+        description.trim() !== (issue.description || '').trim() ||
+        (blocker.trim() || null) !== (issue.blocker || null) ||
+        (dueDate || null) !== (issue.due_date || null) ||
+        (typeId || '') !== (issue.type?.id ? String(issue.type.id) : '') ||
+        (severityId || '') !== (issue.severity?.id ? String(issue.severity.id) : '') ||
+        (priorityId || '') !== (issue.priority?.id ? String(issue.priority.id) : '') ||
+        (statusId || '') !== (issue.status?.id ? String(issue.status.id) : '') ||
+        tagsChanged ||
+        newTags.length > 0)
+    const hasPendingAttachments = pendingFiles.length > 0
+    const shouldUpdateIssue = coreFieldsChanged || assigneeChanged || watcherChanged
 
-    let payload: IssuePayload
-    if (editable) {
-      payload = {
-        title: title.trim(),
-        description: description.trim(),
-        blocker: blocker.trim() || null,
-        due_date: dueDate || null,
-        type_id: typeId ? Number(typeId) : null,
-        severity_id: severityId ? Number(severityId) : null,
-        priority_id: priorityId ? Number(priorityId) : null,
-        status_id: statusId ? Number(statusId) : null,
-        assigned_to_id: assignedToId ? Number(assignedToId) : null,
-        tag_ids: tagIds,
-        new_tags: newTags,
-        watcher_ids: watcherIds
-      }
-    } else {
-      payload = {
-        assigned_to_id: assignedToId ? Number(assignedToId) : null,
-        watcher_ids: watcherIds
-      } as IssuePayload
+    if (!shouldUpdateIssue && !hasPendingAttachments) {
+      nav('/issues')
+      return
     }
+
     setSaving(true)
     try {
       if (shouldUpdateIssue) {
+        let payload: IssuePayload
+        if (editable) {
+          payload = {
+            title: title.trim(),
+            description: description.trim(),
+            blocker: blocker.trim() || null,
+            due_date: dueDate || null,
+            type_id: typeId ? Number(typeId) : null,
+            severity_id: severityId ? Number(severityId) : null,
+            priority_id: priorityId ? Number(priorityId) : null,
+            status_id: statusId ? Number(statusId) : null,
+            assigned_to_id: assignedToId ? Number(assignedToId) : null,
+            tag_ids: tagIds,
+            new_tags: newTags,
+            watcher_ids: watcherIds
+          }
+        } else {
+          payload = {
+            assigned_to_id: assignedToId ? Number(assignedToId) : null,
+            watcher_ids: watcherIds
+          } as IssuePayload
+        }
         await issuesApi.update(issue.id, payload)
       }
-      if (pendingFiles.length > 0) {
+      if (hasPendingAttachments) {
         await attachmentsApi.upload(issue.id, pendingFiles)
         setPendingFiles([])
       }
@@ -347,8 +389,16 @@ const IssueDetailPage: React.FC = () => {
 
   async function deleteAttachment(attachmentId: number) {
     if (!issue) return
-    await attachmentsApi.delete(issue.id, attachmentId)
-    await loadAll()
+    const attachment = attachments.find((item) => item.id === attachmentId)
+    if (attachment && !canDeleteAttachment(attachment, currentUser, issue, apiUserId)) return
+    if (!window.confirm('Delete this attachment?')) return
+    setError(null)
+    try {
+      await attachmentsApi.delete(issue.id, attachmentId)
+      setAttachments((current) => current.filter((item) => item.id !== attachmentId))
+    } catch (err: any) {
+      setError(err.message || 'Could not delete attachment.')
+    }
   }
 
   async function addWatcher(userId: string) {
@@ -476,6 +526,7 @@ const IssueDetailPage: React.FC = () => {
                   + Add file{pendingFiles.length > 0 ? ` (${pendingFiles.length} pending)` : ''}
                 </button>
               </div>
+              <p className="muted attachments-hint">You can delete only attachments you uploaded, on any issue.</p>
               {pendingFiles.length > 0 && (
                 <div className="pending-uploads-panel" aria-live="polite">
                   <p className="pending-uploads-note">
@@ -529,8 +580,15 @@ const IssueDetailPage: React.FC = () => {
                             · {formatDate(attachment.created_at)}
                           </p>
                         </div>
-                        {canDeleteAttachment(attachment, currentUser) && (
-                          <button type="button" className="icon-danger" onClick={() => deleteAttachment(attachment.id)} aria-label="Delete attachment">
+                        {canDeleteAttachment(attachment, currentUser, issue, apiUserId) && (
+                          <button
+                            type="button"
+                            className="icon-danger"
+                            disabled={saving}
+                            onClick={() => deleteAttachment(attachment.id)}
+                            aria-label={`Delete attachment ${attachment.original_name}`}
+                            title="Delete attachment"
+                          >
                             <Trash2 size={16} />
                           </button>
                         )}
@@ -649,7 +707,7 @@ const IssueDetailPage: React.FC = () => {
           <Link to="/issues" className="secondary-button">
             Back to issues
           </Link>
-          {canDeleteIssue(issue, currentUser) && (
+          {canDeleteIssue(issue, currentUser, apiUserId) && (
             <button type="button" className="danger-button" onClick={deleteIssue}>
               Delete
             </button>
@@ -722,7 +780,7 @@ const IssueDetailPage: React.FC = () => {
                         <p>{comment.comment}</p>
                       )}
                     </div>
-                    {canEditComment(comment, currentUser) && (
+                    {canEditComment(comment, currentUser, apiUserId) && (
                       <button
                         type="button"
                         className="secondary-button"
@@ -734,7 +792,7 @@ const IssueDetailPage: React.FC = () => {
                         Edit
                       </button>
                     )}
-                    {canDeleteComment(comment, currentUser) && (
+                    {canDeleteComment(comment, currentUser, apiUserId) && (
                       <button type="button" className="icon-danger" onClick={() => deleteComment(comment.id)} aria-label="Delete comment">
                         <Trash2 size={16} />
                       </button>
