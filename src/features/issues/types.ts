@@ -67,6 +67,7 @@ export type IssuePayload = {
   assigned_to_id?: number | null
   tag_ids?: number[]
   new_tags?: Array<{ name: string; color?: string }>
+  watcher_ids?: number[]
 }
 
 export type IssueFilters = {

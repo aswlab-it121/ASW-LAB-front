@@ -89,7 +89,7 @@ const IssueDetailPage: React.FC = () => {
   const [refs, setRefs] = useState<ReferenceData>(emptyRefs)
   const [comments, setComments] = useState<IssueComment[]>([])
   const [attachments, setAttachments] = useState<IssueAttachment[]>([])
-  const [watchers, setWatchers] = useState<ApiUserBrief[]>([])
+  const [watcherIds, setWatcherIds] = useState<number[]>([])
   const [activities, setActivities] = useState<ActivityLog[]>([])
   const [tab, setTab] = useState<'comments' | 'activities'>('comments')
   const [loading, setLoading] = useState(true)
@@ -139,7 +139,7 @@ const IssueDetailPage: React.FC = () => {
       setRefs({ types, severities, priorities, statuses, tags, dueStatuses, users })
       setComments(loadedComments)
       setAttachments(loadedAttachments)
-      setWatchers(loadedWatchers)
+      setWatcherIds(loadedWatchers.map((watcher) => watcher.id))
       setActivities(loadedActivities)
       setTitle(loadedIssue.title || '')
       setDescription(loadedIssue.description || '')
@@ -178,7 +178,14 @@ const IssueDetailPage: React.FC = () => {
     if (!query) return availableTags
     return availableTags.filter((tag) => tag.name.toLowerCase().includes(query))
   }, [availableTags, tagQuery])
-  const availableWatchers = refs.users.filter((user) => !watchers.some((watcher) => watcher.id === user.id))
+  const visibleWatchers = useMemo(
+    () => refs.users.filter((user) => watcherIds.includes(user.id)),
+    [refs.users, watcherIds]
+  )
+  const availableWatchers = useMemo(
+    () => refs.users.filter((user) => !watcherIds.includes(user.id)),
+    [refs.users, watcherIds]
+  )
 
   useEffect(() => {
     if (!editable) {
@@ -249,7 +256,8 @@ const IssueDetailPage: React.FC = () => {
       status_id: statusId ? Number(statusId) : null,
       assigned_to_id: assignedToId ? Number(assignedToId) : null,
       tag_ids: tagIds,
-      new_tags: newTags
+      new_tags: newTags,
+      watcher_ids: watcherIds
     }
     setSaving(true)
     try {
@@ -304,16 +312,15 @@ const IssueDetailPage: React.FC = () => {
   }
 
   async function addWatcher(userId: string) {
-    if (!issue || !userId) return
-    await watchersApi.add(issue.id, userId)
+    if (!userId) return
+    const watcherId = Number(userId)
+    if (!Number.isFinite(watcherId)) return
+    setWatcherIds((current) => (current.includes(watcherId) ? current : [...current, watcherId]))
     setWatcherToAdd('')
-    await loadAll()
   }
 
   async function removeWatcher(userId: number) {
-    if (!issue) return
-    await watchersApi.remove(issue.id, userId)
-    await loadAll()
+    setWatcherIds((current) => current.filter((id) => id !== userId))
   }
 
   async function watchAsMe() {
@@ -486,8 +493,8 @@ const IssueDetailPage: React.FC = () => {
             <section className="property-section">
               <span>Watchers</span>
               <div className="watchers-display">
-                {watchers.length === 0 && <span className="muted">No watchers</span>}
-                {watchers.map((watcher) => (
+                {visibleWatchers.length === 0 && <span className="muted">No watchers</span>}
+                {visibleWatchers.map((watcher) => (
                   <span className="watcher-chip watcher-chip--linked" key={watcher.id}>
                     <Link to={profilePath(watcher, currentUser?.id)}>{watcher.username}</Link>
                     <button type="button" onClick={() => removeWatcher(watcher.id)} aria-label={`Remove ${watcher.username} from watchers`}>
