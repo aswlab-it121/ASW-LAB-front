@@ -116,6 +116,8 @@ const IssueDetailPage: React.FC = () => {
   const [editingCommentText, setEditingCommentText] = useState('')
   const [watcherToAdd, setWatcherToAdd] = useState('')
   const attachmentsInputRef = useRef<HTMLInputElement | null>(null)
+  const [initialAssignedToId, setInitialAssignedToId] = useState('')
+  const [initialWatcherIds, setInitialWatcherIds] = useState<number[]>([])
 
   async function loadAll() {
     if (!issueId) return
@@ -152,6 +154,8 @@ const IssueDetailPage: React.FC = () => {
       setPriorityId(loadedIssue.priority?.id ? String(loadedIssue.priority.id) : '')
       setStatusId(loadedIssue.status?.id ? String(loadedIssue.status.id) : '')
       setAssignedToId(loadedIssue.assigned_to?.id ? String(loadedIssue.assigned_to.id) : '')
+      setInitialAssignedToId(loadedIssue.assigned_to?.id ? String(loadedIssue.assigned_to.id) : '')
+      setInitialWatcherIds(loadedWatchers.map((watcher) => watcher.id).sort((a, b) => a - b))
       setTagIds(loadedIssue.tags.map((tag) => tag.id))
       setNewTags([])
     } catch (err: any) {
@@ -247,6 +251,13 @@ const IssueDetailPage: React.FC = () => {
     event.preventDefault()
     if (!issue) return
     setError(null)
+    const sortedWatcherIds = [...watcherIds].sort((a, b) => a - b)
+    const watcherChanged =
+      sortedWatcherIds.length !== initialWatcherIds.length ||
+      sortedWatcherIds.some((id, index) => id !== initialWatcherIds[index])
+    const assigneeChanged = assignedToId !== initialAssignedToId
+    const shouldUpdateIssue = editable || assigneeChanged || watcherChanged
+
     const payload: IssuePayload = editable
       ? {
           title: title.trim(),
@@ -268,7 +279,9 @@ const IssueDetailPage: React.FC = () => {
         }
     setSaving(true)
     try {
-      await issuesApi.update(issue.id, payload)
+      if (shouldUpdateIssue) {
+        await issuesApi.update(issue.id, payload)
+      }
       if (pendingFiles.length > 0) {
         await attachmentsApi.upload(issue.id, pendingFiles)
         setPendingFiles([])
