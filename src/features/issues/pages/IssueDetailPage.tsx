@@ -332,6 +332,16 @@ const IssueDetailPage: React.FC = () => {
     setPendingFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))
   }
 
+  function openAttachmentPicker() {
+    const input = attachmentsInputRef.current
+    if (!input || saving) return
+    if (typeof input.showPicker === 'function') {
+      input.showPicker()
+      return
+    }
+    input.click()
+  }
+
   async function deleteAttachment(attachmentId: number) {
     if (!issue) return
     await attachmentsApi.delete(issue.id, attachmentId)
@@ -458,7 +468,7 @@ const IssueDetailPage: React.FC = () => {
                   type="button"
                   className="secondary-button file-button"
                   disabled={saving}
-                  onClick={() => attachmentsInputRef.current?.click()}
+                  onClick={openAttachmentPicker}
                 >
                   + Add file
                 </button>
